@@ -26,7 +26,19 @@ public class IPValidator {
         return true;
     }
     public static boolean validateIPv4Address(String str) {
+        if (str.isBlank() || str.isEmpty()) {
+            return false;
+        }
+
+        if(str.charAt(0) == '.'){
+            return false;
+        }
+
         String[] words = str.split("\\.");
+
+        if(words.length < 4 || words.length > 4) {
+            return false;
+        }
 
         for (String word: words) {
             if (!checkNumber(word.toCharArray())) return false;
