@@ -1,4 +1,4 @@
-package bg.sofia.uni.fmi.mjt.compass.dto.type;
+package bg.sofia.uni.fmi.mjt.compass.dto.recipe.type;
 
 public enum CuisineType {
     DEFAULT(""),

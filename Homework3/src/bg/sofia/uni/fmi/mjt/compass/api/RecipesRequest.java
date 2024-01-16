@@ -1,6 +1,6 @@
-package bg.sofia.uni.fmi.mjt.compass.dto.api;
+package bg.sofia.uni.fmi.mjt.compass.api;
 
-import bg.sofia.uni.fmi.mjt.compass.dto.type.MealType;
+import bg.sofia.uni.fmi.mjt.compass.dto.recipe.type.MealType;
 
 import java.net.URI;
 import java.net.URISyntaxException;
@@ -13,7 +13,14 @@ public class RecipesRequest {
     private static final String API_ENDPOINT_HOST = "api.edamam.com";
     private static final String API_ENDPOINT_PATH = "/api/recipes/v2";
 
-    private static final String KEYWORDS_PARAM = "q";
+    private static final String API_KEY = "1eddbfd9af2b8a2fdc21411764a67122";
+
+    private static final String APP_ID = "d1c89079";
+
+    private static final String API_KEY_PARAM_NAME = "api_key";
+
+    private static final String APP_ID_PARAM_NAME = "app_id";
+    private static final String KEYWORDS_PARAM_NAME = "q";
     private static final String MEAL_TYPE_PARAM = "meal-type"; // TODO: check how it is passed as a param
     private static final String HEALTH_PARAM = "health"; // TODO: check how it is passed as a param
     private static final String PAGE_PARAM = "page"; // TODO: check
@@ -67,7 +74,9 @@ public class RecipesRequest {
 
     private String getEndpointQuery(int pageNumber) {
         StringBuilder sb = new StringBuilder();
-        addQueryParam(sb, KEYWORDS_PARAM, String.join(", ", keywords)); // TODO: zapetai li sa sho e
+        addQueryParam(sb, APP_ID_PARAM_NAME, APP_ID);
+        addQueryParam(sb, API_KEY_PARAM_NAME, API_KEY);
+        addQueryParam(sb, KEYWORDS_PARAM_NAME, String.join(", ", keywords)); // TODO: zapetai li sa sho e
 
         if (mealType != MealType.DEFAULT) {
             addQueryParam(sb, MEAL_TYPE_PARAM, mealType.toString());
@@ -145,6 +154,10 @@ public class RecipesRequest {
             this.keywords.addAll(List.of(keywords));
             return this;
         }
+
+        // TODO: add logic for these ones so they are not hardcoded
+//        public RecipesRequestBuilder withAppId(String appId) {}
+//        public RecipesRequestBuilder withApiKey(String apiKey) {}
 
         public RecipesRequest build() {
             return new RecipesRequest(this);

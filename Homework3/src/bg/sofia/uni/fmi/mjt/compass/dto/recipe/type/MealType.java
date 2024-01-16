@@ -1,4 +1,4 @@
-package bg.sofia.uni.fmi.mjt.compass.dto.type;
+package bg.sofia.uni.fmi.mjt.compass.dto.recipe.type;
 
 // TODO: check for dinner/lunch
 public enum MealType {

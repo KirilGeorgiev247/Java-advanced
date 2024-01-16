@@ -1,8 +1,8 @@
-package bg.sofia.uni.fmi.mjt.compass.dto;
+package bg.sofia.uni.fmi.mjt.compass.dto.recipe;
 
-import bg.sofia.uni.fmi.mjt.compass.dto.type.CuisineType;
-import bg.sofia.uni.fmi.mjt.compass.dto.type.DishType;
-import bg.sofia.uni.fmi.mjt.compass.dto.type.MealType;
+import bg.sofia.uni.fmi.mjt.compass.dto.recipe.type.CuisineType;
+import bg.sofia.uni.fmi.mjt.compass.dto.recipe.type.DishType;
+import bg.sofia.uni.fmi.mjt.compass.dto.recipe.type.MealType;
 
 import java.util.List;
 
