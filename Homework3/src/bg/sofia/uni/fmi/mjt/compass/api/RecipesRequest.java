@@ -1,7 +1,5 @@
 package bg.sofia.uni.fmi.mjt.compass.api;
 
-import bg.sofia.uni.fmi.mjt.compass.dto.recipe.type.MealType;
-
 import java.net.URI;
 import java.net.URISyntaxException;
 import java.util.ArrayList;
@@ -12,40 +10,41 @@ public class RecipesRequest {
     private static final String API_ENDPOINT_SCHEME = "https";
     private static final String API_ENDPOINT_HOST = "api.edamam.com";
     private static final String API_ENDPOINT_PATH = "/api/recipes/v2";
-
-    private static final String API_KEY = "1eddbfd9af2b8a2fdc21411764a67122";
-
+    private static final String API_KEY = "f718de985be7df2244e8fa8445c78759";
     private static final String APP_ID = "d1c89079";
-
-    private static final String API_KEY_PARAM_NAME = "api_key";
-
+    private static final String TYPE_PUBLIC = "public";
+    private static final String API_KEY_PARAM_NAME = "app_key";
     private static final String APP_ID_PARAM_NAME = "app_id";
     private static final String KEYWORDS_PARAM_NAME = "q";
-    private static final String MEAL_TYPE_PARAM = "meal-type"; // TODO: check how it is passed as a param
-    private static final String HEALTH_PARAM = "health"; // TODO: check how it is passed as a param
-    private static final String PAGE_PARAM = "page"; // TODO: check
-    private static final String PAGE_SIZE_PARAM = "pageSize"; // TODO: check
+    private static final String TYPE_PARAM_NAME = "type";
+    private static final String MEAL_TYPE_PARAM_NAME = "mealType";
+    private static final String HEALTH_PARAM_NAME = "health";
+    private static final String CUISINE_TYPE_PARAM_NAME = "cuisineType";
+    private static final String DISH_TYPE_PARAM_NAME = "dishType";
 
     // TODO: -->
+    private static final String PAGE_PARAM = "page"; // TODO: check
+    private static final String PAGE_SIZE_PARAM = "pageSize"; // TODO: check
     private static final int ELEMENTS_ON_PAGE = 50;
     private static final int DEFAULT_PAGES_COUNT = 2;
     private static final int DEFAULT_PAGE_NUMBER = 1;
     // TODO: <--
-
-    private static final String DEFAULT_HEALTH_LABEL = "";
-
     private final List<String> keywords;
-    private final MealType mealType;
-    private final String healthLabel;
+    private final List<String> mealTypes;
+    private final List<String> healthLabels;
+    private final List<String> dishTypes;
+    private final List<String> cuisineTypes;
 
     private RecipesRequest(RecipesRequestBuilder builder) {
         this.keywords = builder.getKeywords();
-        this.mealType = builder.getMealType();
-        this.healthLabel = builder.getHealthLabel();
+        this.mealTypes = builder.getMealTypes();
+        this.healthLabels = builder.getHealthLabels();
+        this.dishTypes = builder.getDishTypes();
+        this.cuisineTypes = builder.getCuisineTypes();
     }
 
-    public static RecipesRequestBuilder newRequest(String... keywords) {
-        return new RecipesRequestBuilder(keywords);
+    public static RecipesRequestBuilder newRequest() {
+        return new RecipesRequestBuilder();
     }
 
     public URI uri() {
@@ -54,12 +53,7 @@ public class RecipesRequest {
 
     public URI uri(int page) {
         try {
-            return new URI(
-                API_ENDPOINT_SCHEME,
-                API_ENDPOINT_HOST,
-                API_ENDPOINT_PATH,
-                getEndpointQuery(page),
-                null);
+            return new URI(API_ENDPOINT_SCHEME, API_ENDPOINT_HOST, API_ENDPOINT_PATH, getEndpointQuery(page), null);
         } catch (URISyntaxException e) {
             throw new RuntimeException(e);
         }
@@ -74,27 +68,106 @@ public class RecipesRequest {
 
     private String getEndpointQuery(int pageNumber) {
         StringBuilder sb = new StringBuilder();
+        addQueryParam(sb, TYPE_PARAM_NAME, TYPE_PUBLIC);
+        addQueryParam(sb, KEYWORDS_PARAM_NAME, String.join(", ", keywords)); // TODO: zapetai li sa sho e
         addQueryParam(sb, APP_ID_PARAM_NAME, APP_ID);
         addQueryParam(sb, API_KEY_PARAM_NAME, API_KEY);
-        addQueryParam(sb, KEYWORDS_PARAM_NAME, String.join(", ", keywords)); // TODO: zapetai li sa sho e
 
-        if (mealType != MealType.DEFAULT) {
-            addQueryParam(sb, MEAL_TYPE_PARAM, mealType.toString());
+        if (healthLabels != null && !healthLabels.isEmpty()) {
+            healthLabels.forEach(hl -> addQueryParam(sb, HEALTH_PARAM_NAME, hl));
         }
 
-        if (healthLabel != null && !healthLabel.isBlank()) {
-            addQueryParam(sb, HEALTH_PARAM, healthLabel);
+        if (cuisineTypes != null && !cuisineTypes.isEmpty()) {
+            cuisineTypes.forEach(ct -> addQueryParam(sb, CUISINE_TYPE_PARAM_NAME, ct));
+        }
+
+        if (mealTypes != null && !mealTypes.isEmpty()) {
+            mealTypes.forEach(mt -> addQueryParam(sb, MEAL_TYPE_PARAM_NAME, mt));
+        }
+
+        if (dishTypes != null && !dishTypes.isEmpty()) {
+            dishTypes.forEach(dt -> addQueryParam(sb, DISH_TYPE_PARAM_NAME, dt));
         }
 
         // TODO: check logic for pagination
-        addQueryParam(sb, PAGE_PARAM, String.valueOf(pageNumber));
-        addQueryParam(sb, PAGE_SIZE_PARAM, String.valueOf(ELEMENTS_ON_PAGE));
+//        addQueryParam(sb, PAGE_PARAM, String.valueOf(pageNumber));
+//        addQueryParam(sb, PAGE_SIZE_PARAM, String.valueOf(ELEMENTS_ON_PAGE));
 
         return sb.toString();
     }
 
     public Iterator<URI> getIterator(int elementsTotal) {
-        return new PageIterator(Math.ceilDiv(elementsTotal, ELEMENTS_ON_PAGE)); // TODO: check if math.ceilDiv must be removed
+        return new PageIterator(
+            Math.ceilDiv(elementsTotal, ELEMENTS_ON_PAGE)); // TODO: check if math.ceilDiv must be removed
+    }
+
+    public static class RecipesRequestBuilder {
+        private final List<String> keywords;
+        private final List<String> mealTypes;
+        private final List<String> healthLabels;
+        private final List<String> dishTypes;
+        private final List<String> cuisineTypes;
+
+        private RecipesRequestBuilder() {
+            this.keywords = new ArrayList<>();
+            this.mealTypes = new ArrayList<>();
+            this.healthLabels = new ArrayList<>();
+            this.dishTypes = new ArrayList<>();
+            this.cuisineTypes = new ArrayList<>();
+        }
+
+        public List<String> getKeywords() {
+            return keywords;
+        }
+
+        public List<String> getMealTypes() {
+            return mealTypes;
+        }
+
+        public List<String> getHealthLabels() {
+            return healthLabels;
+        }
+
+        public List<String> getDishTypes() {
+            return dishTypes;
+        }
+
+        public List<String> getCuisineTypes() {
+            return cuisineTypes;
+        }
+
+        public RecipesRequestBuilder withMealTypes(String... mealTypes) {
+            this.mealTypes.addAll(List.of(mealTypes));
+            return this;
+        }
+
+        public RecipesRequestBuilder withHealthLabels(String... healthLabels) {
+            this.healthLabels.addAll(List.of(healthLabels));
+            return this;
+        }
+
+        public RecipesRequestBuilder withCuisineType(String... cuisineTypes) {
+            this.cuisineTypes.addAll(List.of(cuisineTypes));
+            return this;
+        }
+
+        public RecipesRequestBuilder withDishTypes(String... dishTypes) {
+            this.dishTypes.addAll(List.of(dishTypes));
+            return this;
+        }
+
+        public RecipesRequestBuilder withKeywords(String... keywords) {
+            this.keywords.addAll(List.of(keywords));
+            return this;
+        }
+
+        // TODO: add logic for these ones so they are not hardcoded
+//        public RecipesRequestBuilder withAppId(String appId) {}
+//        public RecipesRequestBuilder withApiKey(String apiKey) {}
+
+        public RecipesRequest build() {
+            return new RecipesRequest(this);
+        }
     }
 
     private class PageIterator implements Iterator<URI> {
@@ -114,53 +187,6 @@ public class RecipesRequest {
         @Override
         public URI next() {
             return uri(currentPage++);
-        }
-    }
-
-    public static class RecipesRequestBuilder {
-
-        private final List<String> keywords;
-        private MealType mealType = MealType.DEFAULT;
-        private String healthLabel = DEFAULT_HEALTH_LABEL;
-
-        public List<String> getKeywords() {
-            return keywords;
-        }
-
-        public MealType getMealType() {
-            return mealType;
-        }
-
-        public String getHealthLabel() {
-            return healthLabel;
-        }
-
-        private RecipesRequestBuilder(String... keywords) {
-            this.keywords = new ArrayList<>();
-            this.keywords.addAll(List.of(keywords));
-        }
-
-        public RecipesRequestBuilder withMealType(MealType mealType) {
-            this.mealType = mealType;
-            return this;
-        }
-
-        public RecipesRequestBuilder withHealthLabel(String healthLabel) {
-            this.healthLabel = healthLabel;
-            return this;
-        }
-
-        public RecipesRequestBuilder withKeywords(String... keywords) {
-            this.keywords.addAll(List.of(keywords));
-            return this;
-        }
-
-        // TODO: add logic for these ones so they are not hardcoded
-//        public RecipesRequestBuilder withAppId(String appId) {}
-//        public RecipesRequestBuilder withApiKey(String apiKey) {}
-
-        public RecipesRequest build() {
-            return new RecipesRequest(this);
         }
     }
 }
