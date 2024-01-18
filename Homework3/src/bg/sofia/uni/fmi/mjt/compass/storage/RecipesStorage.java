@@ -1,18 +1,16 @@
 package bg.sofia.uni.fmi.mjt.compass.storage;
 
-import bg.sofia.uni.fmi.mjt.compass.api.RecipesContainer;
-import bg.sofia.uni.fmi.mjt.compass.api.RecipesRequest;
-import bg.sofia.uni.fmi.mjt.compass.dto.recipe.Recipe;
+import bg.sofia.uni.fmi.mjt.compass.api.RecipesResult;
 
+import java.net.URI;
 import java.util.HashMap;
-import java.util.List;
 import java.util.Map;
 
-public class RecipesStorage implements Storage<RecipesRequest, RecipesContainer> {
+public class RecipesStorage implements Storage<URI, RecipesResult> {
 
-    Map<RecipesRequest, RecipesContainer> storageContainer;
+    Map<URI, RecipesResult> storageContainer;
 
-    Map<RecipesRequest, Integer> timeouts;
+    Map<URI, Integer> timeouts;
     private final Integer defaultTimeout;
     public RecipesStorage(int defaultTimeout) {
         this.defaultTimeout = defaultTimeout;
@@ -21,32 +19,32 @@ public class RecipesStorage implements Storage<RecipesRequest, RecipesContainer>
     }
 
     @Override
-    public boolean has(RecipesRequest request) {
-        return storageContainer.containsKey(request);
+    public boolean has(URI uri) {
+        return storageContainer.containsKey(uri);
     }
 
     @Override
-    public RecipesContainer get(RecipesRequest request) {
-        Integer currTimeout = timeouts.get(request);
+    public RecipesResult get(URI uri) {
+        Integer currTimeout = timeouts.get(uri);
 
         if (currTimeout == null) {
-            return null; // TODO: optional
+            return null;
         }
 
         currTimeout--;
 
-        timeouts.put(request, currTimeout);
+        timeouts.put(uri, currTimeout);
 
         if (currTimeout <= 0) {
-            storageContainer.remove(request);
+            storageContainer.remove(uri);
         }
 
-        return storageContainer.getOrDefault(request, null);
+        return storageContainer.getOrDefault(uri, null);
     }
 
     @Override
-    public void put(RecipesRequest request, RecipesContainer recipes) {
-        storageContainer.put(request, recipes);
-        timeouts.put(request, defaultTimeout);
+    public void put(URI uri, RecipesResult recipes) {
+        storageContainer.put(uri, recipes);
+        timeouts.put(uri, defaultTimeout);
     }
 }
