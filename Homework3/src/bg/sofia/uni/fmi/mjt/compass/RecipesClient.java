@@ -1,9 +1,14 @@
 package bg.sofia.uni.fmi.mjt.compass;
 
-import bg.sofia.uni.fmi.mjt.compass.api.RecipesContainer;
+import bg.sofia.uni.fmi.mjt.compass.api.RecipesResult;
 import bg.sofia.uni.fmi.mjt.compass.api.RecipesHttpClient;
-import bg.sofia.uni.fmi.mjt.compass.api.RecipesRequest;
+import bg.sofia.uni.fmi.mjt.compass.api.request.BuiltRequest;
+import bg.sofia.uni.fmi.mjt.compass.exception.UnsuccessfulRequest;
+import bg.sofia.uni.fmi.mjt.compass.iterator.PageIterator;
 import bg.sofia.uni.fmi.mjt.compass.storage.RecipesStorage;
+
+import java.net.URI;
+import java.util.Iterator;
 
 public class RecipesClient {
     private static final int DEFAULT_TIMEOUT = 10;
@@ -19,15 +24,32 @@ public class RecipesClient {
         recipesStorage = new RecipesStorage(defaultTimeout);
     }
 
-    public RecipesContainer execute(RecipesRequest request) throws Exception {
-        if (recipesStorage.has(request)) {
-            return recipesStorage.get(request);
+    public RecipesResult execute(BuiltRequest request, int pagesCount) throws UnsuccessfulRequest {
+        if (recipesStorage.has(request.uri())) {
+            return recipesStorage.get(request.uri());
         }
 
-        RecipesContainer recipes = client.getRecipes();
+        RecipesResult result = client.executeRecipesRequest(request.uri());
+        recipesStorage.put(request.uri(), result);
 
-        recipesStorage.put(request, recipes);
+        Iterator<RecipesResult> iterator = new PageIterator(client, result);
+        int iterations = Math.max(2, pagesCount);
 
-        return recipes;
+        for (int i = 0; i < iterations - 1; i++) {
+            if (iterator.hasNext()) {
+                RecipesResult currResult = iterator.next();
+                recipesStorage.put(URI.create(result.nextPageUri()), currResult);
+                result.concat(currResult.recipes());
+                result.changeUri(currResult.nextPageUri());
+            } else {
+                break;
+            }
+        }
+
+        return result;
+    }
+
+    public RecipesResult execute(BuiltRequest request) throws UnsuccessfulRequest {
+        return this.execute(request, 1);
     }
 }
