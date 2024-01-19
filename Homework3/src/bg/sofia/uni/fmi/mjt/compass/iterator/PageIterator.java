@@ -8,12 +8,10 @@ import java.net.URI;
 import java.util.Iterator;
 
 public class PageIterator implements Iterator<RecipesResult> {
-
     private final RecipesHttpClient httpClient;
     private RecipesResult curr;
 
     public PageIterator(RecipesHttpClient httpClient, RecipesResult begin) {
-
         this.httpClient = httpClient;
         curr = begin;
     }

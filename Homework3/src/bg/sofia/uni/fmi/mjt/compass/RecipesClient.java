@@ -3,11 +3,12 @@ package bg.sofia.uni.fmi.mjt.compass;
 import bg.sofia.uni.fmi.mjt.compass.api.RecipesResult;
 import bg.sofia.uni.fmi.mjt.compass.api.RecipesHttpClient;
 import bg.sofia.uni.fmi.mjt.compass.api.request.BuiltRequest;
+import bg.sofia.uni.fmi.mjt.compass.api.request.RecipesRequest;
 import bg.sofia.uni.fmi.mjt.compass.exception.UnsuccessfulRequest;
 import bg.sofia.uni.fmi.mjt.compass.iterator.PageIterator;
 import bg.sofia.uni.fmi.mjt.compass.storage.RecipesStorage;
 
-import java.net.URI;
+import java.net.URISyntaxException;
 import java.util.Iterator;
 
 public class RecipesClient {
@@ -24,13 +25,15 @@ public class RecipesClient {
         recipesStorage = new RecipesStorage(defaultTimeout);
     }
 
-    public RecipesResult execute(BuiltRequest request, int pagesCount) throws UnsuccessfulRequest {
-        if (recipesStorage.has(request.uri())) {
-            return recipesStorage.get(request.uri());
-        }
+    public RecipesResult execute(BuiltRequest request, int pagesCount) throws UnsuccessfulRequest, URISyntaxException {
+        RecipesResult result;
 
-        RecipesResult result = client.executeRecipesRequest(request.uri());
-        recipesStorage.put(request.uri(), result);
+        if (recipesStorage.has(request.uri().toString())) {
+            result = recipesStorage.get(request.uri().toString());
+        } else {
+            result = client.executeRecipesRequest(request.uri());
+            recipesStorage.put(request.uri().toString(), result);
+        }
 
         Iterator<RecipesResult> iterator = new PageIterator(client, result);
         int iterations = Math.max(2, pagesCount);
@@ -38,7 +41,7 @@ public class RecipesClient {
         for (int i = 0; i < iterations - 1; i++) {
             if (iterator.hasNext()) {
                 RecipesResult currResult = iterator.next();
-                recipesStorage.put(URI.create(result.nextPageUri()), currResult);
+                recipesStorage.put(result.nextPageUri(), currResult);
                 result.concat(currResult.recipes());
                 result.changeUri(currResult.nextPageUri());
             } else {
@@ -49,7 +52,7 @@ public class RecipesClient {
         return result;
     }
 
-    public RecipesResult execute(BuiltRequest request) throws UnsuccessfulRequest {
+    public RecipesResult execute(BuiltRequest request) throws UnsuccessfulRequest, URISyntaxException {
         return this.execute(request, 1);
     }
 }

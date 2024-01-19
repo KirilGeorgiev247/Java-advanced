@@ -1,7 +1,5 @@
 package bg.sofia.uni.fmi.mjt.compass.api.request;
 
-import bg.sofia.uni.fmi.mjt.compass.exception.UncheckedURISyntaxException;
-
 import java.net.URI;
 import java.net.URISyntaxException;
 import java.util.ArrayList;
@@ -46,12 +44,8 @@ public class RecipesRequest implements BuiltRequest {
     }
 
     @Override
-    public URI uri() {
-        try {
-            return new URI(API_ENDPOINT_SCHEME, API_ENDPOINT_HOST, API_ENDPOINT_PATH, getEndpointQuery(), null);
-        } catch (URISyntaxException e) {
-            throw new UncheckedURISyntaxException("There was a syntax error in uri creation", e.getCause());
-        }
+    public URI uri() throws URISyntaxException {
+        return new URI(API_ENDPOINT_SCHEME, API_ENDPOINT_HOST, API_ENDPOINT_PATH, getEndpointQuery(), null);
     }
 
     private void addQueryParam(StringBuilder builder, String queryParamName, String queryParamValue) {
@@ -135,28 +129,38 @@ public class RecipesRequest implements BuiltRequest {
             return appKey;
         }
 
-        public RecipesRequestBuilder withMealTypes(String... mealTypes) {
-            this.mealTypes.addAll(List.of(mealTypes));
+        public RecipesRequestBuilder withMealTypes(List<String> mealTypes) {
+            if (mealTypes != null && !mealTypes.isEmpty()) {
+                this.mealTypes.addAll(mealTypes);
+            }
             return this;
         }
 
-        public RecipesRequestBuilder withHealthLabels(String... healthLabels) {
-            this.healthLabels.addAll(List.of(healthLabels));
+        public RecipesRequestBuilder withHealthLabels(List<String> healthLabels) {
+            if (healthLabels != null && !healthLabels.isEmpty()) {
+                this.healthLabels.addAll(healthLabels);
+            }
             return this;
         }
 
-        public RecipesRequestBuilder withCuisineType(String... cuisineTypes) {
-            this.cuisineTypes.addAll(List.of(cuisineTypes));
+        public RecipesRequestBuilder withCuisineTypes(List<String> cuisineTypes) {
+            if (cuisineTypes != null && !cuisineTypes.isEmpty()) {
+                this.cuisineTypes.addAll(cuisineTypes);
+            }
             return this;
         }
 
-        public RecipesRequestBuilder withDishTypes(String... dishTypes) {
-            this.dishTypes.addAll(List.of(dishTypes));
+        public RecipesRequestBuilder withDishTypes(List<String> dishTypes) {
+            if (dishTypes != null && !dishTypes.isEmpty()) {
+                this.dishTypes.addAll(dishTypes);
+            }
             return this;
         }
 
-        public RecipesRequestBuilder withKeywords(String... keywords) {
-            this.keywords.addAll(List.of(keywords));
+        public RecipesRequestBuilder withKeywords(List<String> keywords) {
+            if (keywords != null && !keywords.isEmpty()) {
+                this.keywords.addAll(keywords);
+            }
             return this;
         }
 

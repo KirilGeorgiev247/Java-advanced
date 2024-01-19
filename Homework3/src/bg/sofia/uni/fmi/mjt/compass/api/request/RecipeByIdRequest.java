@@ -1,7 +1,5 @@
 package bg.sofia.uni.fmi.mjt.compass.api.request;
 
-import bg.sofia.uni.fmi.mjt.compass.exception.UncheckedURISyntaxException;
-
 import java.net.URI;
 import java.net.URISyntaxException;
 
@@ -32,13 +30,9 @@ public class RecipeByIdRequest implements BuiltRequest {
     }
 
     @Override
-    public URI uri() {
-        try {
-            return new URI(API_ENDPOINT_SCHEME, API_ENDPOINT_HOST, API_ENDPOINT_PATH.concat(id), getEndpointQuery(),
-                null);
-        } catch (URISyntaxException e) {
-            throw new UncheckedURISyntaxException("There was a syntax error in uri creation", e.getCause());
-        }
+    public URI uri() throws URISyntaxException {
+        return new URI(API_ENDPOINT_SCHEME, API_ENDPOINT_HOST, API_ENDPOINT_PATH.concat(id), getEndpointQuery(),
+            null);
     }
 
     private void addQueryParam(StringBuilder builder, String queryParamName, String queryParamValue) {

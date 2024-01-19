@@ -2,15 +2,14 @@ package bg.sofia.uni.fmi.mjt.compass.storage;
 
 import bg.sofia.uni.fmi.mjt.compass.api.RecipesResult;
 
-import java.net.URI;
 import java.util.HashMap;
 import java.util.Map;
 
-public class RecipesStorage implements Storage<URI, RecipesResult> {
+public class RecipesStorage implements Storage<String, RecipesResult> {
 
-    Map<URI, RecipesResult> storageContainer;
+    Map<String, RecipesResult> storageContainer;
 
-    Map<URI, Integer> timeouts;
+    Map<String, Integer> timeouts;
     private final Integer defaultTimeout;
     public RecipesStorage(int defaultTimeout) {
         this.defaultTimeout = defaultTimeout;
@@ -19,12 +18,12 @@ public class RecipesStorage implements Storage<URI, RecipesResult> {
     }
 
     @Override
-    public boolean has(URI uri) {
+    public boolean has(String uri) {
         return storageContainer.containsKey(uri);
     }
 
     @Override
-    public RecipesResult get(URI uri) {
+    public RecipesResult get(String uri) {
         Integer currTimeout = timeouts.get(uri);
 
         if (currTimeout == null) {
@@ -43,7 +42,7 @@ public class RecipesStorage implements Storage<URI, RecipesResult> {
     }
 
     @Override
-    public void put(URI uri, RecipesResult recipes) {
+    public void put(String uri, RecipesResult recipes) {
         storageContainer.put(uri, recipes);
         timeouts.put(uri, defaultTimeout);
     }

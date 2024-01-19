@@ -7,6 +7,7 @@ import bg.sofia.uni.fmi.mjt.compass.dto.response.recipe.RecipeWrapper;
 import bg.sofia.uni.fmi.mjt.compass.exception.UnsuccessfulParsing;
 import bg.sofia.uni.fmi.mjt.compass.exception.UnsuccessfulRequest;
 import com.google.gson.Gson;
+import com.google.gson.JsonSyntaxException;
 
 import java.io.IOException;
 import java.net.URI;
@@ -34,14 +35,14 @@ public class RecipesHttpClient {
         try {
             HttpRequest httpRequest = HttpRequest.newBuilder().uri(uri).build();
             response = httpClient.send(httpRequest, HttpResponse.BodyHandlers.ofString());
-        } catch (IOException | InterruptedException e) {
+        } catch (IOException | InterruptedException | IllegalArgumentException e) {
             throw new UnsuccessfulRequest("Request failed", e.getCause());
         }
 
         return getParsedResult(response);
     }
 
-    String parseNextPageUri(NextPageWrapper nextPageWrapper) {
+    private String parseNextPageUri(NextPageWrapper nextPageWrapper) {
         if (nextPageWrapper == null || nextPageWrapper.next() == null || nextPageWrapper.next().href() == null) {
             return EMPTY_STRING;
         }
@@ -49,23 +50,27 @@ public class RecipesHttpClient {
         return nextPageWrapper.next().href();
     }
 
-    RecipesResult getParsedResult(HttpResponse<String> response) throws UnsuccessfulRequest {
+    private RecipesResult getParsedResult(HttpResponse<String> response) throws UnsuccessfulRequest {
         var statusCode = response.statusCode();
 
-        if (statusCode == OK_CODE) {
-            var parsedResponse = GSON.fromJson(response.body(), RecipesResponse.class);
-            if (parsedResponse == null) {
-                throw new UnsuccessfulParsing("Unsuccessful recipes result parsing");
+        try {
+            if (statusCode == OK_CODE) {
+                RecipesResponse parsedResponse = GSON.fromJson(response.body(), RecipesResponse.class);
+                if (parsedResponse == null) {
+                    throw new UnsuccessfulParsing("Unsuccessful recipes result parsing");
+                }
+                return new RecipesResult(parseNextPageUri(parsedResponse.nextPageWrapper()),
+                    parsedResponse.recipes().stream().map(RecipeWrapper::recipe).filter(Objects::nonNull).toList());
+            } else if (statusCode == NO_ACCESS_CODE || statusCode == BAD_REQUEST_CODE || statusCode == NOT_FOUND_CODE) {
+                ErrorResponse parsedResponse = GSON.fromJson(response.body(), ErrorResponse.class);
+                if (parsedResponse == null) {
+                    throw new UnsuccessfulParsing("Unsuccessful error result parsing");
+                } else {
+                    throw new UnsuccessfulRequest(parsedResponse.message(), statusCode);
+                }
             }
-            return new RecipesResult(parseNextPageUri(parsedResponse.nextPageWrapper()),
-                parsedResponse.recipes().stream().map(RecipeWrapper::recipe).filter(Objects::nonNull).toList());
-        } else if (statusCode == NO_ACCESS_CODE || statusCode == BAD_REQUEST_CODE || statusCode == NOT_FOUND_CODE) {
-            var parsedResponse = GSON.fromJson(response.body(), ErrorResponse.class);
-            if (parsedResponse == null) {
-                throw new UnsuccessfulParsing("Unsuccessful error result parsing");
-            } else {
-                throw new UnsuccessfulRequest(parsedResponse.message(), statusCode);
-            }
+        } catch (JsonSyntaxException | NullPointerException e) {
+            throw new UnsuccessfulParsing("Unsuccessful error result parsing");
         }
 
         throw new UnsuccessfulRequest("Unexpected response code", statusCode);
