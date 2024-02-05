@@ -4,5 +4,5 @@ import server.data.user.User;
 
 import java.util.List;
 
-public record Group(String name, List<User> participants) {
+public record Group(String name, String groupCreator, List<User> participants) {
 }

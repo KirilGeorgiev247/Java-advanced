@@ -2,6 +2,9 @@ package server.storage;
 
 import server.data.group.Group;
 import server.data.user.User;
+import server.exception.AlreadyExistsException;
+import server.exception.NotExistingGroupExeption;
+import server.exception.NotExistingUserException;
 
 import java.util.ArrayDeque;
 import java.util.HashMap;
@@ -21,13 +24,39 @@ public class FileStorage implements Storage {
     }
 
     @Override
-    public void addUser(String username, User user) {
-        users.put(username, user);
+    public User getUser(String username) throws NotExistingUserException {
+        if (users.containsKey(username)) {
+            return users.get(username);
+        }
+
+        throw new NotExistingUserException("User with such username does not exist!");
     }
 
     @Override
-    public void addGroup(String name, Group group) {
-        groups.put(name, group);
+    public Group getGroup(String name) throws NotExistingGroupExeption {
+        if(groups.containsKey(name)) {
+            return groups.get(name);
+        }
+
+        throw new NotExistingGroupExeption("Group with such name does not exist!");
+    }
+
+    @Override
+    public void addUser(User user) throws AlreadyExistsException {
+        if (users.containsKey(user.getUsername())) {
+            throw new AlreadyExistsException("User with such username already exist!");
+        }
+
+        users.put(user.getUsername(), user);
+    }
+
+    @Override
+    public void addGroup(Group group) throws AlreadyExistsException {
+        if (groups.containsKey(group.name())) {
+            throw new AlreadyExistsException("Group with such name already exist!");
+        }
+
+        groups.put(group.name(), group);
     }
 
     @Override

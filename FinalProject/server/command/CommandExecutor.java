@@ -1,13 +1,12 @@
 package server.command;
 
-import server.exception.NotAuthenticated;
 import server.repository.UserRepository;
 import server.response.Response;
+import server.response.status.ServerStatusCode;
 import server.session.Session;
 
 import java.math.BigDecimal;
 import java.util.Arrays;
-import java.util.List;
 
 public class CommandExecutor {
     private static final String INVALID_ARGS_COUNT_MESSAGE_FORMAT =
@@ -23,6 +22,7 @@ public class CommandExecutor {
     private static final String SPLIT_GROUP = "split-group";
     private static final String GET_STATUS = "get-status";
     private static final String PAYED = "payed";
+    private static final String PAYED_GROUP = "payed-group";
 
     // TODO: command names <--
 
@@ -43,28 +43,22 @@ public class CommandExecutor {
             case SPLIT_GROUP -> splitGroup(cmd.arguments(), session.getUsername());
             case GET_STATUS -> getStatus(cmd.arguments(), session.getUsername());
             case PAYED -> payed(cmd.arguments(), session.getUsername());
-            default -> new Response(404, List.of("Invalid command"));
+            case PAYED_GROUP -> payedGroup(cmd.arguments(), session.getUsername());
+            default -> Response.decline(ServerStatusCode.BAD_REQUEST, "Unknown command!");
         };
     }
 
     private Response register(String[] args, String clientUsername) {
         // validate
 
-        if(clientUsername != null) {
-            // currently logged in
-        }
-
-        return userRepository.createUser(args[0], args[1], args[2]);
+        return userRepository.createUser(clientUsername, args[0], args[1], args[2]);
     }
 
     private Response login(String[] args, String clientUsername) {
         // validate
 
-        if(clientUsername != null) {
-            // currently logged in
-        }
 
-        return userRepository.loginUser(args[0], args[1]);
+        return userRepository.loginUser(clientUsername, args[0], args[1]);
     }
 
     private Response logOut(String[] args, String clientUsername) {
@@ -88,17 +82,20 @@ public class CommandExecutor {
     private Response split(String[] args, String clientUsername) {
         // validate
 
-        return userRepository.split(clientUsername, args[0], new BigDecimal(args[1]));
+        return userRepository.split(clientUsername, args[0], new BigDecimal(args[1]), );
     }
 
     private Response splitGroup(String[] args, String clientUsername) {
         // validate
 
-        return userRepository.splitGroup(clientUsername, args[0], new BigDecimal(args[1]));
+        return userRepository.splitGroup(clientUsername, args[0], new BigDecimal(args[1]), );
     }
 
     private Response getStatus(String[] args, String clientUsername) {
-        // validate
+        if (args.length != 0) {
+            return Response.decline(ServerStatusCode.BAD_REQUEST,
+                "Get status command does not take any arguments! Example: get-status");
+        }
 
         return userRepository.getStatus(clientUsername);
     }
@@ -107,5 +104,11 @@ public class CommandExecutor {
         // validate
 
         return userRepository.announcePayOff(clientUsername, new BigDecimal(args[0]), args[1]);
+    }
+
+    private Response payedGroup(String[] args, String clientUsername) {
+        
+
+        return userRepository.announceGroupPayOff(clientUsername, new BigDecimal(args[0]), args[1], args[2]);
     }
 }
