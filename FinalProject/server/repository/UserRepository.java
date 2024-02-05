@@ -12,7 +12,7 @@ public interface UserRepository {
 
     Response announcePayOff(String clientUsername, BigDecimal amount, String friendUsername);
 
-    Response announceGroupPayOff(String clientUsername, BigDecimal amount, , String groupName, String payer);
+    Response announceGroupPayOff(String clientUsername, BigDecimal amount, String groupName, String payer);
 
     Response getStatus(String username);
 
