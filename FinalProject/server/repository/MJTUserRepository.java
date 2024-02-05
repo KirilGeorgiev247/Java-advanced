@@ -1,42 +1,45 @@
 package server.repository;
 
 import server.response.Response;
+import server.storage.Storage;
 
+import java.math.BigDecimal;
 import java.util.List;
 
 public class MJTUserRepository implements UserRepository {
 
-    // collection
-    public MJTUserRepository() {
-        // load from file by creation and initial the right collection
+    private final Storage storage;
+    public MJTUserRepository(Storage storage) {
+        this.storage = storage;
     }
     @Override
-    public Response addFriend(String username) {
+    public Response addFriend(String clientUsername, String friendUsername) {
+
         return null;
     }
 
     @Override
-    public Response getUserByUsername(String username) {
+    public Response announcePayOff(String clientUsername, BigDecimal amount, String friendUsername) {
         return null;
     }
 
     @Override
-    public Response getUserGroups(String username) {
+    public Response getStatus(String username) {
         return null;
     }
 
     @Override
-    public Response getUserFriends(String username) {
+    public Response split(String clientUsername, String friendUsername, BigDecimal amount) {
         return null;
     }
 
     @Override
-    public Response announcePayOff(String username) {
+    public Response splitGroup(String clientUsername, String groupName, BigDecimal amount) {
         return null;
     }
 
     @Override
-    public Response createGroup(String groupName, List<String> usernames) {
+    public Response createGroup(String clientUsername, String groupName, List<String> usernames) {
         return null;
     }
 
@@ -51,7 +54,7 @@ public class MJTUserRepository implements UserRepository {
     }
 
     @Override
-    public Response deleteUser(String username) {
+    public Response logOutUser(String username) {
         return null;
     }
 }

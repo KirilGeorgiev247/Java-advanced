@@ -1,6 +1,6 @@
 package server.services;
 
-import server.user.User;
+import server.data.user.User;
 
 import java.math.BigDecimal;
 

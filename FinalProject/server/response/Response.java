@@ -1,4 +1,7 @@
 package server.response;
 
-public record Response() {
+import java.util.List;
+
+public record Response(int statusCode, List<String> info) {
+    
 }
