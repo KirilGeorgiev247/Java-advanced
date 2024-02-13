@@ -3,8 +3,8 @@ package server.session;
 import java.nio.channels.SocketChannel;
 
 public class UserSession implements Session {
-    private SocketChannel channel;
-    private String username; // Will be null until the user is authenticated
+    private final SocketChannel channel;
+    private String username;
 
     public UserSession(SocketChannel channel) {
         this.channel = channel;

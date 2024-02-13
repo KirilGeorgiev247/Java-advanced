@@ -1,26 +1,55 @@
 package server.storage;
 
+import com.google.gson.Gson;
+import com.google.gson.reflect.TypeToken;
+import config.Config;
+import logger.Logger;
 import server.data.group.Group;
+import server.data.notification.Notification;
 import server.data.user.User;
 import server.exception.AlreadyExistsException;
 import server.exception.NotExistingGroupExeption;
 import server.exception.NotExistingUserException;
 
+import java.io.FileReader;
+import java.io.FileWriter;
+import java.io.IOException;
+import java.io.Reader;
+import java.io.UncheckedIOException;
+import java.io.Writer;
+import java.lang.reflect.Type;
+import java.nio.file.Files;
+import java.nio.file.Paths;
 import java.util.ArrayDeque;
 import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
 import java.util.Queue;
 
 public class FileStorage implements Storage {
 
-    private final Map<String, User> users = new HashMap();
+    private final Map<String, User> users = new HashMap<>();
 
     private final Map<String, Group> groups = new HashMap<>();
 
-    private final Map<String, Queue<String>> notifications = new HashMap<>();
+    private final Map<String, Queue<Notification>> paymentHistory = new HashMap<>();
 
-    public FileStorage() {
+    private final Gson gson = new Gson();
+    private final String storagePath;
+
+    public FileStorage(String storagePath) {
+        this.storagePath = storagePath;
         loadData();
+    }
+
+    @Override
+    public void save() {
+        try {
+            saveData();
+        } catch (IOException e) {
+            Logger.logError(e.getMessage(), e);
+            throw new UncheckedIOException(e.getMessage(), e);
+        }
     }
 
     @Override
@@ -34,7 +63,7 @@ public class FileStorage implements Storage {
 
     @Override
     public Group getGroup(String name) throws NotExistingGroupExeption {
-        if(groups.containsKey(name)) {
+        if (groups.containsKey(name)) {
             return groups.get(name);
         }
 
@@ -48,6 +77,13 @@ public class FileStorage implements Storage {
         }
 
         users.put(user.getUsername(), user);
+
+        try {
+            saveData();
+        } catch (IOException e) {
+            Logger.logError("Failed to save user", e);
+            throw new UncheckedIOException(e.getMessage(), e);
+        }
     }
 
     @Override
@@ -57,17 +93,36 @@ public class FileStorage implements Storage {
         }
 
         groups.put(group.name(), group);
+
+        try {
+            saveData();
+        } catch (IOException e) {
+            Logger.logError("Failed to save group", e);
+            throw new UncheckedIOException(e.getMessage(), e);
+        }
     }
 
     @Override
-    public void addNotification(String username, String notification) {
-        if(notifications.containsKey(username)) {
-            notifications.get(username).add(notification);
+    public void addPaymentActionToHistory(User user, Notification notification) {
+        if (paymentHistory.containsKey(user.getUsername())) {
+            paymentHistory.get(user.getUsername()).add(notification);
         } else {
-            Queue<String> notificationsQueue = new ArrayDeque<>();
-            notificationsQueue.add(notification);
-            notifications.put(username, notificationsQueue);
+            Queue<Notification> initPaymentHistory = new ArrayDeque<>(List.of(notification));
+            paymentHistory.put(user.getUsername(), initPaymentHistory);
         }
+
+        try {
+            saveHistory(user);
+        } catch (IOException e) {
+            Logger.logError("Failed to save payment actions history for " + user.getUsername(), e);
+            throw new UncheckedIOException(e.getMessage(), e);
+        }
+    }
+
+    @Override
+    public Queue<Notification> getUserPaymentHistory(User user) {
+        loadHistory(user);
+        return paymentHistory.get(user.getUsername());
     }
 
     @Override
@@ -80,17 +135,73 @@ public class FileStorage implements Storage {
         return groups;
     }
 
-    @Override
-    public Map<String, Queue<String>> getNotifications() {
-        return notifications;
-    }
-
-    @Override
-    public void saveData() {
-
+    private void saveData() throws IOException {
+        synchronized (this) {
+            try (Writer writer = new FileWriter(storagePath)) {
+                Map<String, Object> allData = new HashMap<>();
+                allData.put("users", users);
+                allData.put("groups", groups);
+                gson.toJson(allData, writer);
+            }
+        }
     }
 
     private void loadData() {
+        synchronized (this) {
+            if (!Files.exists(Paths.get(storagePath))) {
+                return;
+            }
+            try (Reader reader = new FileReader(storagePath)) {
+                Type usersType = new TypeToken<HashMap<String, User>>() {
+                }.getType();
+                Type groupsType = new TypeToken<HashMap<String, Group>>() {
+                }.getType();
+                Map<String, Object> allData = gson.fromJson(reader, new TypeToken<HashMap<String, Object>>() {
+                }.getType());
 
+                if (allData != null) {
+                    users.clear();
+                    Map<String, User> usersMap = gson.fromJson(gson.toJson(allData.get("users")), usersType);
+                    users.putAll(usersMap);
+
+                    groups.clear();
+                    Map<String, Group> groupsMap = gson.fromJson(gson.toJson(allData.get("groups")), groupsType);
+                    groups.putAll(groupsMap);
+                }
+            } catch (IOException e) {
+                Logger.logError("Failed to load data", e);
+                throw new UncheckedIOException(e.getMessage(), e);
+            }
+        }
+    }
+
+    private void saveHistory(User user) throws IOException {
+        synchronized (this) {
+            try (Writer writer = new FileWriter(Config.getUserHistoryFile(user))) {
+                Queue<Notification> userHistory =
+                    paymentHistory.getOrDefault(user.getUsername(), new ArrayDeque<>());
+                gson.toJson(userHistory, writer);
+            }
+        }
+    }
+
+    private void loadHistory(User user) {
+        synchronized (this) {
+            if (!Files.exists(Paths.get(Config.getUserHistoryFile(user)))) {
+                return;
+            }
+            try (Reader reader = new FileReader(Config.getUserHistoryFile(user))) {
+                Type dataType = new TypeToken<Queue<Notification>>() {
+                }.getType();
+                Queue<Notification> userHistory = gson.fromJson(reader, dataType);
+
+                if (userHistory != null) {
+                    paymentHistory.put(user.getUsername(), userHistory);
+                }
+            } catch (IOException e) {
+                Logger.logError("Failed to load payment actions history for " + user.getUsername(), e);
+                throw new UncheckedIOException(e.getMessage(), e);
+            }
+        }
     }
 }

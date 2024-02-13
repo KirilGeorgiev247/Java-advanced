@@ -1,6 +1,7 @@
 package server.storage;
 
 import server.data.group.Group;
+import server.data.notification.Notification;
 import server.data.user.User;
 import server.exception.AlreadyExistsException;
 import server.exception.NotExistingGroupExeption;
@@ -13,14 +14,18 @@ public interface Storage {
     public User getUser(String username) throws NotExistingUserException;
 
     public Group getGroup(String name) throws NotExistingGroupExeption;
+
     public void addUser(User user) throws AlreadyExistsException;
+
     public void addGroup(Group group) throws AlreadyExistsException;
-    public void addNotification(String username, String notification);
+
     public Map<String, User> getUsers();
 
     public Map<String, Group> getGroups();
 
-    public Map<String, Queue<String>> getNotifications();
+    public void addPaymentActionToHistory(User user, Notification notification);
 
-    public void saveData();
+    public Queue<Notification> getUserPaymentHistory(User user);
+
+    public void save();
 }

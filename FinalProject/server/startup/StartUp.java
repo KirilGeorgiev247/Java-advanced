@@ -1,31 +1,32 @@
 package server.startup;
 
+import config.Config;
 import server.algorithm.HashCalculator;
 import server.algorithm.MD5HashCalculator;
 import server.command.CommandExecutor;
 import server.multithreaded.SplitWiseServer;
 import server.repository.MJTUserRepository;
 import server.repository.UserRepository;
+import server.services.NotificationService;
 import server.storage.FileStorage;
 import server.storage.Storage;
 
 public class StartUp {
-    private static UserRepository userRepository;
-    private static CommandExecutor commandExecutor;
     private static boolean isStarted = false;
     private static int currPort;
     private static Storage storage;
     private static SplitWiseServer server;
-
-    private static HashCalculator hashCalculator;
+    private static NotificationService notificationService = new NotificationService();
 
     public static void start(int port) {
-        if(!isStarted) {
+        if (!isStarted) {
+            isStarted = true;
             currPort = port;
-            storage = new FileStorage();
-            hashCalculator = new MD5HashCalculator();
-            userRepository = new MJTUserRepository(storage, hashCalculator);
-            commandExecutor = new CommandExecutor(userRepository);
+            storage = new FileStorage(Config.STORAGE_PATH);
+
+            HashCalculator hashCalculator = new MD5HashCalculator();
+            UserRepository userRepository = new MJTUserRepository(storage, hashCalculator, notificationService);
+            CommandExecutor commandExecutor = new CommandExecutor(userRepository);
             server = new SplitWiseServer(port, commandExecutor);
             server.start();
         }
@@ -37,7 +38,9 @@ public class StartUp {
     }
 
     public static void close() {
-        storage.saveData();
-        server.stop();
+        if (isStarted) {
+            server.stop();
+            isStarted = false;
+        }
     }
 }

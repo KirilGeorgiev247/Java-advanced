@@ -1,9 +1,12 @@
 package server.multithreaded;
 
+import config.Config;
+import logger.Logger;
 import server.command.CommandCreator;
 import server.command.CommandExecutor;
 import server.response.Response;
 import server.session.Session;
+import server.session.UserSession;
 
 import java.io.IOException;
 import java.io.UncheckedIOException;
@@ -18,18 +21,14 @@ import java.util.HashMap;
 import java.util.Iterator;
 import java.util.Map;
 
-
-// TODO: Use socket channels
 public class SplitWiseServer {
-
-    private static final int BUFFER_SIZE = 1024;
-    private static final String HOST = "localhost";
     private final CommandExecutor commandExecutor;
     private final int port;
+    private final Map<SocketChannel, Session> sessions = new HashMap<>();
     private boolean isServerWorking;
     private ByteBuffer buffer;
     private Selector selector;
-    private Map<SocketChannel, Session> sessions = new HashMap<>();
+
     public SplitWiseServer(int port, CommandExecutor commandExecutor) {
         this.port = port;
         this.commandExecutor = commandExecutor;
@@ -39,7 +38,7 @@ public class SplitWiseServer {
         try (ServerSocketChannel serverSocketChannel = ServerSocketChannel.open()) {
             selector = Selector.open();
             configureServerSocketChannel(serverSocketChannel, selector);
-            this.buffer = ByteBuffer.allocate(BUFFER_SIZE);
+            this.buffer = ByteBuffer.allocate(Config.DEFAULT_BUFFER_SIZE);
             isServerWorking = true;
             while (isServerWorking) {
                 try {
@@ -48,41 +47,16 @@ public class SplitWiseServer {
                         continue;
                     }
 
-                    Iterator<SelectionKey> keyIterator = selector.selectedKeys().iterator();
-                    while (keyIterator.hasNext()) {
-                        SelectionKey key = keyIterator.next();
-                        if (key.isReadable()) {
-                            SocketChannel clientChannel = (SocketChannel) key.channel();
-                            Session session = sessions.get(clientChannel);
-                            if (session == null) {
-                                // TODO: check what to do here
-                                // This shouldn't happen normally as sessions are added on accept
-                                continue;
-                            }
-                            String clientInput = getClientInput(clientChannel);
+                    iterateSelectorKeys();
 
-                            System.out.println(clientInput); // TODO: Probably delete
-
-                            if (clientInput == null) {
-                                continue;
-                            }
-
-                            // TODO: check if JSON is needed
-                            Response output = commandExecutor.execute(CommandCreator.newCommand(clientInput), session);
-                            writeClientOutput(clientChannel, output.toString());
-
-                        } else if (key.isAcceptable()) {
-                            accept(selector, key);
-                        }
-
-                        keyIterator.remove();
-                    }
                 } catch (IOException e) {
-                    System.out.println("Error occurred while processing client request: " + e.getMessage());
+                    Logger.logError("Error occurred while processing client request", e);
+                    throw new UncheckedIOException(e.getMessage(), e);
                 }
             }
         } catch (IOException e) {
-            throw new UncheckedIOException("failed to start server", e);
+            Logger.logError("Failed to start server", e);
+            throw new UncheckedIOException(e.getMessage(), e);
         }
     }
 
@@ -94,7 +68,7 @@ public class SplitWiseServer {
     }
 
     private void configureServerSocketChannel(ServerSocketChannel channel, Selector selector) throws IOException {
-        channel.bind(new InetSocketAddress(HOST, this.port));
+        channel.bind(new InetSocketAddress(Config.HOST, this.port));
         channel.configureBlocking(false);
         channel.register(selector, SelectionKey.OP_ACCEPT);
     }
@@ -129,6 +103,45 @@ public class SplitWiseServer {
         SocketChannel accept = sockChannel.accept();
 
         accept.configureBlocking(false);
-        accept.register(selector, SelectionKey.OP_READ);
+        SelectionKey clientKey = accept.register(selector, SelectionKey.OP_READ);
+
+        Session session = new UserSession(accept);
+        sessions.put(accept, session);
+
+        clientKey.attach(selector);
+    }
+
+    private void disconnectClient(SocketChannel clientChannel) throws IOException {
+        clientChannel.close();
+    }
+
+    private void iterateSelectorKeys() throws IOException {
+        Iterator<SelectionKey> keyIterator = selector.selectedKeys().iterator();
+        while (keyIterator.hasNext()) {
+            SelectionKey key = keyIterator.next();
+            if (key.isReadable()) {
+                SocketChannel clientChannel = (SocketChannel) key.channel();
+                Session session = sessions.get(clientChannel);
+                if (session == null) {
+                    continue;
+                }
+                String clientInput = getClientInput(clientChannel);
+
+                if (clientInput == null) {
+                    continue;
+                }
+
+                Response response =
+                    commandExecutor.execute(CommandCreator.newCommand(clientInput), session);
+                writeClientOutput(clientChannel, response.info());
+                if (clientInput.equals("disconnect")) {
+                    disconnectClient(clientChannel);
+                }
+
+            } else if (key.isAcceptable()) {
+                accept(selector, key);
+            }
+            keyIterator.remove();
+        }
     }
 }

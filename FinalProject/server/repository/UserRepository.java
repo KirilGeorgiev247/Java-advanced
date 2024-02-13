@@ -12,7 +12,7 @@ public interface UserRepository {
 
     Response announcePayOff(String clientUsername, BigDecimal amount, String friendUsername);
 
-    Response announceGroupPayOff(String clientUsername, BigDecimal amount, String groupName, String payer);
+//    Response announceGroupPayOff(String clientUsername, BigDecimal amount, String groupName, String payer);
 
     Response getStatus(String username);
 
@@ -28,18 +28,5 @@ public interface UserRepository {
 
     Response logOutUser(String username);
 
-
-//    Response getUserByUsername(String username);
-//
-//    Response getUserGroups(String username);
-//
-//    Response getUserFriends(String username);
-//
-//    Response deleteUser(String username);
-//
-//    Response getUserById(String id);
-//
-//    Response getUsers();
-//
-//    Response getGroups();
+    Response paymentHistory(String username);
 }

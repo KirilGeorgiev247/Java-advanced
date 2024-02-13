@@ -2,8 +2,6 @@ package server.response;
 
 import server.response.status.ServerStatusCode;
 
-import java.util.List;
-
 public record Response(int statusCode, String info) {
 
     public static Response decline(ServerStatusCode statusCode, String errorMessage) {
